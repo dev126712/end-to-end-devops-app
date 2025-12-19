@@ -1,0 +1,60 @@
+name: Scan, Build and push image to Dockerhub
+on:
+  push:
+    branches:
+      -main
+    paths:
+      - 'frontend/**'
+permissions:
+  contents: read
+  security-events: write
+jobs:
+  secirity-scan-Checkov:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write 
+    steps:
+    - name: checkout repo
+      uses: actions/checkout@v4
+
+    - name: Run Checkov Security Scan on frontend
+      uses: bridgecrewio/checkov-action@master
+      with:
+        directory: frontend/ 
+        output_format: cli
+        soft_fail: true
+        quiet: true  
+  build-image-frontend:     
+    needs: secirity-scan-Checkov-frontend
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write 
+    env:
+      IMAGE_NAME_FRONTEND: dockerized-three-tier-app-frontend
+      IMAGE_LATEST_TAG_FRONTEND: ${{ secrets.GIT_USERNAME }}/dockerized-three-tier-app-frontend:latest
+      FRONTEND_TAGS: dockerized-three-tier-app-frontend:latest, dockerized-three-tier-app-frontend:${{ github.sha }}
+    steps:
+    - name: checkout repo
+      uses: actions/checkout@v4
+
+    - name: Set up QEMU 
+      uses: docker/setup-qemu-action@v3 
+
+    - name: set up docker
+      uses: docker/setup-buildx-action@v2
+
+    - name: Build the Docker images
+      uses: docker/build-push-action@v6
+      with:
+        context: ./frontend
+        push: false
+        tags: ${{ env.FRONTEND_TAGS }}
+        load: true
+        outputs: type=docker,dest=/tmp/${{ env.IMAGE_NAME_FRONTEND }}.tar
+
+    - name: Upload Image Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ env.IMAGE_NAME_FRONTEND }}
+        path: /tmp/${{ env.IMAGE_NAME_FRONTEND }}.tar
+  
