@@ -1,0 +1,104 @@
+name: Scan, Build and push image to Dockerhub
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'backend/**'
+      
+permissions:
+  contents: read
+  security-events: write
+env:
+  IMAGE_NAME_BACKEND: backend-end-to-end-app
+  IMAGE_LATEST_TAG_BACKEND: ${{ secrets.GIT_USERNAME }}/backend-end-to-end-app:latest
+  BACKEND_TAGS: backend-end-to-end-app:latest, backend-end-to-end-app:${{ github.sha }}
+
+  
+jobs:
+
+  secirity-scan-Checkov:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write 
+    steps:
+    - name: checkout repo
+      uses: actions/checkout@v4
+
+    - name: Run Checkov Security Scan on backend
+      uses: bridgecrewio/checkov-action@master
+      with:
+        directory: frontend/ 
+        output_format: cli
+        soft_fail: true
+        quiet: true 
+        
+  build-image-backend:     
+    needs: secirity-scan-Checkov
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write 
+    steps:
+    - name: checkout repo
+      uses: actions/checkout@v4
+
+    - name: Set up QEMU 
+      uses: docker/setup-qemu-action@v3 
+
+    - name: set up docker
+      uses: docker/setup-buildx-action@v2
+
+    - name: Build the Docker images
+      uses: docker/build-push-action@v6
+      with:
+        context: ./backend
+        push: false
+        tags: ${{ env.BACKEND_TAGS }}
+        load: true
+        outputs: type=docker,dest=/tmp/${{ env.IMAGE_NAME_BACKEND }}.tar
+
+    - name: Upload Image Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ env.IMAGE_NAME_BACKEND }}
+        path: /tmp/${{ env.IMAGE_NAME_BACKEND }}.tar
+
+  scan-with-trivy:
+    name: Trivy Security Scan Image backend
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write 
+    needs: build-image-backend
+    steps:
+    - name: Download Image artifact
+      uses: actions/download-artifact@v4
+      with:
+        name: ${{ env.IMAGE_NAME_BACKEND }}
+        path: /tmp
+
+    - name: Load image
+      run: |
+        docker load --input /tmp/${{ env.IMAGE_NAME_BACKEND }}.tar
+        docker image ls -a
+
+    - name: Install Trivy
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y curl
+        curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sudo sh -s -- -b /usr/local/bin v0.57.0
+  
+    - name: Download Trivy vulnerability database
+      run: trivy image --download-db-only
+      
+    - name: Run Trivy vulnerability scan
+      run: |
+        trivy image \
+          --exit-code 0 \
+          --format table \
+          --ignore-unfixed \
+          --pkg-types os,library \
+          --severity CRITICAL,HIGH,MEDIUM \
+          ${{ env.IMAGE_NAME_BACKEND }}:latest
+
+        
+  
