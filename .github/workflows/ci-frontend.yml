@@ -2,7 +2,7 @@ name: Scan, Build and push image to Dockerhub
 on:
   push:
     branches:
-      -main
+      - main
     paths:
       - 'frontend/**'
       
