@@ -2,7 +2,7 @@
 
 #### Dockerfile
 Best practices:
-- Using specific image version. In my cae ```` node:20-alpine ````
+- Using specific image version. In my case ```` node:20-alpine ````
 - Creating a user and Executing command as a non-root user
 - Multistage Dockerfile
 
