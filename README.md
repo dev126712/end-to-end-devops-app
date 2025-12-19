@@ -1,3 +1,18 @@
+## End to end devops project
+
+#### Dockerfile
+Best practices:
+- Using specific image version. In my cae ```` node:20-alpine ````
+- Creating a user and Executing command as a non-root user
+- Multistage Dockerfile
+
+
+
+
+
+
+
+
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
 ## Getting Started
