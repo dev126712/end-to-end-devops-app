@@ -9,7 +9,7 @@ Best practices:
 #### CICD pipeline
 Workflows:
 - Security.yml:
-  - Scans for security flaws in all the workflows
+  - Scans for security flaws in all the workflows files ".yml"
 
 
 
