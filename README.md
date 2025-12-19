@@ -6,8 +6,10 @@ Best practices:
 - Creating a user and Executing command as a non-root user
 - Multistage Dockerfile
 
-
-
+#### CICD pipeline
+Workflows:
+- Security.yml:
+  - Scans for security flaws in all the workflows
 
 
 
