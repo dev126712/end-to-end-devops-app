@@ -10,6 +10,12 @@ Best practices:
 Workflows:
 - Security.yml:
   - Scans for security flaws in all the workflows files ".yml"
+ 
+- ci-frontend.yml:
+  - Static scan code with checkov
+  - Build Image
+  - Dynamic scan code with Trivy
+  - Push Image
 
 
 
