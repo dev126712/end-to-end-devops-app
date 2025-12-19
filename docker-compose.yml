@@ -1,6 +1,7 @@
 services:
   frontend:
-    build: ./frontend
+    build:
+      context:  ./frontend
     ports:
       - "3000:3000"
     depends_on:
@@ -12,5 +13,5 @@ services:
     build: ./backend
     ports:
       - "5000:5000"
-    volumes:
-      - ./backend/todos.json:/app/todos.json
+   # volumes:
+    #  - ./backend/todos.json:/app/todos.json

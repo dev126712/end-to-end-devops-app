@@ -1,38 +1,43 @@
-# Build stage
-FROM node:18-alpine AS builder
+FROM node:20-alpine AS builder
 
 WORKDIR /app
 
-# Copy package files
-COPY package*.json ./
+COPY package.json package-lock.json  ./
 
-# Install dependencies
 RUN npm ci
 
-# Copy source code
-COPY . .
+COPY . ./
 
-# Production stage
-FROM node:18-alpine AS runner
+RUN npm run build
+
+FROM node:20-alpine AS runner
 
 WORKDIR /app
+ENV NODE_ENV=production
 
-# Create a non-root user
+COPY --from=builder /app/package.json /app/package-lock.json  ./
+RUN npm ci --omit=dev
+COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/todos.json ./todos.json
+
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 backend
 
-# Copy built application with correct ownership
-COPY --from=builder --chown=backend:nodejs /app .
+#RUN chown backend:nodejs /app/todos.json
 
-# Switch to non-root user
 USER backend
 
-# Expose port
 EXPOSE 5000
 
-# Set environment variables
 ENV PORT 5000
 ENV NODE_ENV production
-
-# Start the application
+#CMD ["node", "dist/server.ts"]
 CMD ["npm", "start"]
+
+#FROM node:20-alpine
+#WORKDIR /app
+#COPY package*.json ./
+#RUN npm install
+#COPY . .
+#EXPOSE 5000
+#CMD ["npm", "start"]

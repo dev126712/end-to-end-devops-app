@@ -1,6 +1,6 @@
 import fs from 'fs/promises';
 import path from 'path';
-import { Todo } from '../types/todo';
+import { Todo } from '../types/todo.js';
 
 const filePath = path.join(process.cwd(), 'todos.json');
 
