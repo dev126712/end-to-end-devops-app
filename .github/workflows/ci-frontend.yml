@@ -8,7 +8,14 @@ on:
 permissions:
   contents: read
   security-events: write
+env:
+  IMAGE_NAME_FRONTEND: frontend-end-to-end-app
+  IMAGE_LATEST_TAG_FRONTEND: ${{ secrets.GIT_USERNAME }}/frontend-end-to-end-app:latest
+  FRONTEND_TAGS: frontend-end-to-end-app:latest, frontend-end-to-end-app:${{ github.sha }}
+
+  
 jobs:
+
   secirity-scan-Checkov:
     runs-on: ubuntu-latest
     permissions:
@@ -23,16 +30,13 @@ jobs:
         directory: frontend/ 
         output_format: cli
         soft_fail: true
-        quiet: true  
+        quiet: true 
+        
   build-image-frontend:     
-    needs: secirity-scan-Checkov-frontend
+    needs: secirity-scan-Checkov
     runs-on: ubuntu-latest
     permissions:
       contents: write 
-    env:
-      IMAGE_NAME_FRONTEND: dockerized-three-tier-app-frontend
-      IMAGE_LATEST_TAG_FRONTEND: ${{ secrets.GIT_USERNAME }}/dockerized-three-tier-app-frontend:latest
-      FRONTEND_TAGS: dockerized-three-tier-app-frontend:latest, dockerized-three-tier-app-frontend:${{ github.sha }}
     steps:
     - name: checkout repo
       uses: actions/checkout@v4
@@ -57,4 +61,43 @@ jobs:
       with:
         name: ${{ env.IMAGE_NAME_FRONTEND }}
         path: /tmp/${{ env.IMAGE_NAME_FRONTEND }}.tar
+
+  scan-with-trivy:
+    name: Trivy Security Scan Image Frontend
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write 
+    needs: build-image-frontend
+    steps:
+    - name: Download Image artifact
+      uses: actions/download-artifact@v4
+      with:
+        name: ${{ env.IMAGE_NAME_FRONTEND }}
+        path: /tmp
+
+    - name: Load image
+      run: |
+        docker load --input /tmp/${{ env.IMAGE_NAME_FRONTEND }}.tar
+        docker image ls -a
+
+    - name: Install Trivy
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y curl
+        curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sudo sh -s -- -b /usr/local/bin v0.57.0
+  
+    - name: Download Trivy vulnerability database
+      run: trivy image --download-db-only
+      
+    - name: Run Trivy vulnerability scan
+      run: |
+        trivy image \
+          --exit-code 0 \
+          --format table \
+          --ignore-unfixed \
+          --pkg-types os,library \
+          --severity CRITICAL,HIGH,MEDIUM \
+          ${{ env.IMAGE_NAME_FRONTEND }}:latest
+
+        
   
