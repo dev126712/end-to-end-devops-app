@@ -15,7 +15,13 @@ Workflows:
   - Static scan code with checkov
   - Build Image
   - Dynamic scan code with Trivy
-  - Push Image
+  - Push Image to DockerHub
+ 
+- ci-backend.yml
+  - Static scan code with checkov
+  - Build image
+  - Dynamic scan code with trivy
+  - Push Image to DockerHub
 
 
 
