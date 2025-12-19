@@ -3,7 +3,7 @@ on:
   push:
     branches:
       - main
-    paths: '.github/workflows/**'
+    paths: '.github/workflows/**.yml'
 
 permissions:
   contents: read
